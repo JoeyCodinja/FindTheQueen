@@ -46,13 +46,15 @@ public class Server {
 
                 }
             }
+
             for (int response=0; response < 2; response++){
                 userResponse = userResponses[response];
                 try{
                     userResponse.join();
                     responses.put(
-                            ((UserResponse)Thread.currentThread()).getUser(),
-                            ((UserResponse)Thread.currentThread()).getResponse());
+                            userResponse.getUser(),
+                            userResponse.getResponse());
+                    responses.forEach((user, gameResponse) -> {user.tell("Processing Results");});
                 } catch (InterruptedException e){
                     // TODO: Report the failure
                 }
