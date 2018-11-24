@@ -69,7 +69,7 @@ public class User {
 
     public String listen() throws IOException{
         String response = this.inbound.readUTF();
-        System.out.print("Client Response");
+        System.out.print("Client Response: ");
         System.out.println(response);
         return response;
     }
