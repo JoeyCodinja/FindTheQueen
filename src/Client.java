@@ -5,6 +5,7 @@ import java.io.IOException;
 import java.net.Socket;
 import java.net.UnknownHostException;
 import java.util.ArrayList;
+import java.util.NoSuchElementException;
 import java.util.Scanner;
 
 public class Client {
@@ -17,7 +18,7 @@ public class Client {
     }};
 
 
-    public Client(String address, int port){
+    public Client(String address, int port) throws IOException{
 
         try {
             socket = new Socket(address, port);
@@ -32,34 +33,55 @@ public class Client {
         }
 
         String line = "";
+        ServerReader serverReader = new ServerReader(socket_input, socket);
+        serverReader.start();
 
-        while (!terminationMessages.contains(line)){
+        while (true){
             synchronized (new Object()){
-                try{
-                    line = socket_input.nextLine();
-                    System.out.println(line);
-                    System.out.print("Your response: ");
-                    line = input.nextLine();
-                    output.writeUTF(line);
-                    output.flush();
-                } catch (IOException e){
-                    System.out.println(e);
-                }
+                line = input.nextLine();
+                output.writeUTF(line);
+                output.flush();
             }
         }
-
-        try{
-            input.close();
-            output.close();
-            socket.close();
-        } catch (IOException e){
-            System.out.println(e);
-        }
-
-
     }
 
     public static void main(String[] args){
-        Client client = new Client("0.0.0.0", 7621);
+        try{
+            Client client = new Client("0.0.0.0", 7621);
+        } catch (IOException e){
+            System.out.println("Connection closed");
+        }
+    }
+
+    class ServerReader extends Thread {
+        Scanner inputStream;
+        Socket socket;
+
+        ServerReader(Scanner inputStream, Socket socket){
+            this.inputStream = inputStream;
+            this.socket = socket;
+        }
+
+        public void run(){
+            ArrayList<String> terminationMessages = new ArrayList<String>(){{
+                add("Victory");
+                add("Defeat");
+            }};
+            String line="";
+
+            while (!terminationMessages.contains(line)){
+                try{
+                    line = this.inputStream.nextLine();
+                    System.out.println(line);
+                } catch (NoSuchElementException e){
+                    line = "";
+                }
+            }
+            try{
+                this.socket.close();
+            } catch(IOException e){
+                System.out.println("Connection closed unexpectedly");
+            }
+        }
     }
 }
