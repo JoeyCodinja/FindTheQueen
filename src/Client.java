@@ -2,15 +2,10 @@ import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.EOFException;
 import java.io.IOException;
-import java.net.InetSocketAddress;
 import java.net.Socket;
 import java.net.UnknownHostException;
-import java.nio.ByteBuffer;
-import java.nio.channels.AsynchronousSocketChannel;
 import java.util.ArrayList;
 import java.util.Scanner;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.Future;
 
 public class Client {
     private Socket socket;
@@ -24,30 +19,43 @@ public class Client {
 
     public Client(String address, int port){
 
-        try (AsynchronousSocketChannel client = AsynchronousSocketChannel.open()){
-            Future<Void> result = client.connect(new InetSocketAddress("0.0.0.0", 7621));
-            result.get();
-            ByteBuffer buffer = ByteBuffer.allocate(1024);
-            Future<Integer> readval, writeval;
-            String line = "";
-            while(!terminationMessages.contains(line)){
-                Scanner scanner = new Scanner(System.in);
-                readval = client.read(buffer);
-                line = new String(buffer.array()).trim();
-                System.out.println(line);
-                readval.get();
-                buffer.flip();
-                buffer = ByteBuffer.wrap(scanner.nextLine().getBytes());
-                writeval = client.write(buffer);
-                writeval.get();
-                buffer.clear();
+        try {
+            socket = new Socket(address, port);
 
-            }
-        } catch (ExecutionException|IOException e){
-            System.out.println(e);
-        } catch (InterruptedException e){
+            input = new Scanner(System.in);
+
+            socket_input = new Scanner(socket.getInputStream());
+
+            output = new DataOutputStream(socket.getOutputStream());
+        } catch (IOException e){
             System.out.println(e);
         }
+
+        String line = "";
+
+        while (!terminationMessages.contains(line)){
+            synchronized (new Object()){
+                try{
+                    line = socket_input.nextLine();
+                    System.out.println(line);
+                    System.out.print("Your response: ");
+                    line = input.nextLine();
+                    output.writeUTF(line);
+                    output.flush();
+                } catch (IOException e){
+                    System.out.println(e);
+                }
+            }
+        }
+
+        try{
+            input.close();
+            output.close();
+            socket.close();
+        } catch (IOException e){
+            System.out.println(e);
+        }
+
 
     }
 

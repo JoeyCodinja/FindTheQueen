@@ -95,6 +95,7 @@ class UserResponse extends Thread {
     UserResponse(ServerSocket serverSocket, HashMap<String, String> credentials) throws Exception {
         super();
         this.socket = serverSocket.accept();
+        this.credentials = credentials;
         try{
             this.user = new User(this.socket);
         } catch (IOException e){
@@ -103,17 +104,17 @@ class UserResponse extends Thread {
     }
 
     @Override
-    public synchronized void run(){
+    public void run(){
         int programState = 1;
         try {
-            while (true) {
+            while (programState < 4) {
                 switch (programState) {
                     case 1:
                         // Check the username
                         String username;
                         this.user.tell("Enter your username");
                         username = this.user.listen();
-                        if (credentials.containsKey(username)) {
+                        if (this.credentials.containsKey(username)) {
                             programState++;
                             this.user.setUsername(username);
                         } else {
@@ -123,7 +124,7 @@ class UserResponse extends Thread {
                     case 2:
                         // Check the password
                         this.user.tell("Enter your password");
-                        if (this.credentials.get(this.user.getUsername()) == this.user.listen()) {
+                        if (this.credentials.get(this.user.getUsername()).equals(this.user.listen())) {
                             programState++;
                         } else {
                             this.user.tell("Password incorrect");
@@ -134,11 +135,13 @@ class UserResponse extends Thread {
                         this.user.tell("Enter 5 numbers in the range of 1 - 3 (inclusive)");
                         int response;
                         for (int round = 0; round < 5; round++) {
+                                this.user.tell("Number: ");
                                 response = Integer.parseInt(this.user.listen());
                                 if ((response <= 3 | response >= 1)) {
-                                    roundResponses[round] = Integer.parseInt(this.user.listen());
+                                    roundResponses[round] = Integer.valueOf(response);
                                 }
                         }
+                        programState++;
                         break;
                 }
             }
